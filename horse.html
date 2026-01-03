@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+
+<link rel="icon" type="image/png" href="https://codehs.com/uploads/66d8abd0c8d0367052b5445db9fe7e03">
+
+<title>Horse Sim</title>
+
+<style>
+* {
+  box-sizing: border-box;
+  user-select: none;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #fff;
+  color: #000;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  height: 50vh;
+}
+
+#game {
+  width: 1000px;
+  text-align: center;
+  margin-top: 20px;
+}
+
+.topButtons {
+  margin-bottom: 10px;
+}
+
+.topButtons button {
+  font-size: 20px;
+  padding: 4px 6px;
+  cursor: pointer;
+  border: 1px solid #000;
+  background: #fff;
+}
+
+h1 {
+  font-size: 32px;
+  margin: 10px 0;
+}
+
+#money, #turn {
+  font-size: 32px;
+  margin: 10px 0;
+}
+
+#bettingScreen {
+  margin: 5px auto;
+}
+
+.horse-option {
+  display: inline-block;
+  margin: 20px;
+  padding: 20px;
+  border: 1px solid #000;
+  background: #ccc;
+  cursor: pointer;
+  transition: 0.3s;
+  font-size: 28px;
+}
+
+.horse-option.selected {
+  border-color: orange;
+  transform: scale(1.1);
+}
+
+.horse-option img {
+  width: 220px;
+  height: 220px;
+  image-rendering: pixelated;
+  display: block;
+  margin: 0 auto;
+}
+
+#betControls {
+  margin-top: 20px;
+}
+
+input {
+  font-size: 24px;
+  width: 140px;
+  padding: 8px;
+}
+
+button {
+  font-size: 28px;
+  padding: 12px 20px;
+  border: 1px solid #000;
+  background: #fff;
+  cursor: pointer;
+  margin-left: 10px;
+}
+
+#raceScreen {
+  display: none;
+  position: relative;
+  height: 600px;
+  margin: 20px auto;
+  border: 1px solid #000;
+  overflow: hidden;
+}
+
+.lane {
+  position: absolute;
+  width: 100%;
+  height: 200px;
+  border-bottom: 1px dashed #000;
+}
+
+.horse {
+  position: absolute;
+  left: 0;
+  width: 220px;
+  height: 220px;
+}
+
+#finishLine {
+  position: absolute;
+  right: 50px;
+  top: 0;
+  height: 100%;
+  width: 50px;
+  border-left: 2px solid #000;
+}
+
+#resultScreen {
+  display: none;
+  text-align: center;
+}
+
+#resultScreen img {
+  width: 300px;
+  height: 300px;
+}
+</style>
+</head>
+
+<body>
+<div id="game">
+
+<div class="topButtons">
+  <a href="https://prismaticantcodehsme-15622749.codehs.me/index.html" target="_blank">
+    <button>WANT TO SEE MORE BY ME</button>
+  </a>
+  <a href="https://forms.gle/Erha43mgU1GC3KFt8" target="_blank">
+    <button>SUBMIT YOUR OWN NAME</button>
+  </a>
+</div>
+
+<div id="bettingScreen">
+  <h1>Horse Sim</h1>
+  <div id="money">Money: $200</div>
+  <div id="turn">Turn: 1</div>
+  <div id="horseOptions"></div>
+
+  <div id="betControls">
+    Bet Amount: $<input id="betAmount" type="number" value="10" min="1">
+    <button onclick="startTurn()">Bet & Start Race</button>
+  </div>
+</div>
+
+<div id="raceScreen">
+  <div class="lane" style="top:0"></div>
+  <div class="lane" style="top:200px"></div>
+  <div class="lane" style="top:400px"></div>
+
+  <img id="horse1" class="horse">
+  <img id="horse2" class="horse">
+  <img id="horse3" class="horse">
+
+  <div id="finishLine"></div>
+</div>
+
+<div id="resultScreen">
+  <h1 id="winnerName"></h1>
+  <img id="winnerHorse">
+  <button onclick="nextMatch()">Next Match</button>
+</div>
+
+</div>
+
+<script>
+let money = 200;
+let selectedHorse = null;
+let bet = 10;
+let turn = 1;
+let finishX = 950;
+
+const horseNames = [
+  "Bella","Charlie","Daisy","Max","Molly","Rocky","Lucy","Duke","Sadie","Jack",
+  "Ginger","Buddy","Lady","Toby","Rosie","Shadow","Coco","Scout","Lucky","Ruby",
+  "Leo","Misty","Ace","Star","Beau","Honey","Storm","Penny","Jasper","Willow"
+];
+
+const colors = [
+  {idle:"https://codehs.com/uploads/f89730c02ab73bf3c40c9a82a8c95e53", move:"https://codehs.com/uploads/31b401ee639b5010e9b82e735bb3554e"},
+  {idle:"https://codehs.com/uploads/df23382cda49125619e60d151b433e20", move:"https://codehs.com/uploads/dfecd300962a4f144776ec6f6a72d562"},
+  {idle:"https://codehs.com/uploads/7fc0d52899371a21014d6503c65582dd", move:"https://codehs.com/uploads/47e8808db4708ad42bf807fab6eba6db"},
+  {idle:"https://codehs.com/uploads/31651681402b73efa7df02dda2c6974f", move:"https://codehs.com/uploads/993ec075308dc79a371fb8db6ca02a23"},
+  {idle:"https://codehs.com/uploads/7216126166c4c6dddc493cf6caf9a0bc", move:"https://codehs.com/uploads/107cee917f4ed9c77644c665006e9d49"},
+  {idle:"https://codehs.com/uploads/e40d299f193126109a6e4ce88b3d326a", move:"https://codehs.com/uploads/3447d9e47822d7cbc8514c35f821c926"},
+  {idle:"https://codehs.com/uploads/fc142d5bc4df9021068371814d42c6de", move:"https://codehs.com/uploads/04a83304232ccc30c1a2ba71c1a8420c"}
+];
+
+let horses = [];
+
+function generateHorses(){
+  horses = [];
+  let usedNames = [], usedColors = [];
+
+  for(let i=0;i<3;i++){
+    let name;
+    do { name = horseNames[Math.floor(Math.random()*horseNames.length)]; }
+    while(usedNames.includes(name));
+    usedNames.push(name);
+
+    let color;
+    do { color = colors[Math.floor(Math.random()*colors.length)]; }
+    while(usedColors.includes(color));
+    usedColors.push(color);
+
+    horses.push({name, color});
+  }
+  renderHorseOptions();
+}
+
+function renderHorseOptions(){
+  const c = document.getElementById("horseOptions");
+  c.innerHTML = "";
+
+  horses.forEach((h,i)=>{
+    const d = document.createElement("div");
+    d.className = "horse-option";
+    d.onclick = ()=>selectHorse(i+1);
+    d.onmouseover = ()=>d.querySelector("img").src = h.color.move;
+    d.onmouseout = ()=>d.querySelector("img").src = h.color.idle;
+
+    d.innerHTML = `<div>${h.name}</div>
+                   <img src="${h.color.idle}">
+                   <div>Horse ${i+1}</div>`;
+    c.appendChild(d);
+  });
+}
+
+function selectHorse(n){
+  selectedHorse = n;
+  document.querySelectorAll(".horse-option")
+    .forEach((e,i)=>e.classList.toggle("selected", i+1 === n));
+}
+
+function startTurn(){
+  if(!selectedHorse) return alert("Select a horse!");
+  bet = parseInt(betAmount.value);
+  if(bet > money) return alert("Not enough money!");
+  money -= bet;
+  document.getElementById("money").textContent = "Money: $" + money;
+  startRace();
+}
+
+function startRace(){
+  bettingScreen.style.display = "none";
+  raceScreen.style.display = "block";
+
+  let pos = [0,0,0];
+  let speed = [Math.random()*3+2,Math.random()*3+2,Math.random()*3+2];
+  let imgs = [horse1,horse2,horse3];
+
+  imgs.forEach((h,i)=>{
+    h.src = horses[i].color.move;
+    h.style.top = (i*200-10)+"px";
+  });
+
+  let race = setInterval(()=>{
+    for(let i=0;i<3;i++){
+      pos[i] += speed[i];
+      imgs[i].style.left = pos[i]+"px";
+      if(pos[i] >= finishX){
+        clearInterval(race);
+        showResult(i);
+      }
+    }
+  },20);
+}
+
+function showResult(i){
+  raceScreen.style.display = "none";
+  resultScreen.style.display = "block";
+
+  winnerName.textContent = horses[i].name + " won!";
+  winnerHorse.src = horses[i].color.move;
+
+  if(selectedHorse === i+1){
+    let winnings = bet * 2 + 10;
+    money += winnings;
+    alert("You won! Earned $" + winnings);
+  }
+
+  document.getElementById("money").textContent = "Money: $" + money;
+}
+
+function nextMatch(){
+  if(money <= 0){
+    alert("Game Over!");
+    location.reload();
+  }
+  resultScreen.style.display = "none";
+  bettingScreen.style.display = "block";
+  selectedHorse = null;
+  turn++;
+  document.getElementById("turn").textContent = "Turn: " + turn;
+  generateHorses();
+}
+
+generateHorses();
+</script>
+
+</body>
+</html>
